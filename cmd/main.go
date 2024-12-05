@@ -23,20 +23,20 @@ func main() {
 		return
 	}
 
-	logger.Info("configuration generation")
+	logger.Info("configuration getting")
 	serverConfig := config.GetServerConfig()
 	dbConfig := config.GetDBConfig()
 
-	logger.Info("database connection")
+	logger.Info("database connecting")
 	db, err := database.Open(dbConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Database connect error: %s\n", err.Error()))
 		return
 	}
 	defer db.Close()
-	logger.Info("database connected")
+	logger.Info("database has been connected")
 
-	logger.Info("start migration")
+	logger.Info("starting migration")
 	err = db.Migration()
 	if err != nil {
 		logger.Error(err)
@@ -48,7 +48,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Get("/secret", handlers.GetTokens(db))
+	r.Get("/auth", handlers.GetTokens(db))
 	r.Get("/refresh", handlers.RefreshTokens(service))
 
 	logger.Info(fmt.Sprintf("server start at port: %s\n", serverConfig.Port))

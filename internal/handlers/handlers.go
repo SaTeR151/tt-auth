@@ -16,7 +16,7 @@ import (
 
 func GetTokens(DB *database.DBStruct) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		logger.Info("start getting tokens")
+		logger.Info("getting tokens")
 		guid := req.FormValue("guid")
 		if guid == "" {
 			logger.Error("guid required")
@@ -86,7 +86,7 @@ func GetTokens(DB *database.DBStruct) http.HandlerFunc {
 
 func RefreshTokens(s *service.ServiceStruct) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		logger.Info("start refresh token")
+		logger.Info("refreshing tokens")
 		guid := req.FormValue("guid")
 		if guid == "" {
 			logger.Error("guid required")
