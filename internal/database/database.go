@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,23 +16,6 @@ import (
 
 var ErrUserNotFound = errors.New("user not found")
 var ErrUnauthorized = errors.New("unauthorized user")
-
-// для настройки logrus
-func init() {
-	logger.SetFormatter(&logger.TextFormatter{FullTimestamp: true})
-	lvl, ok := os.LookupEnv("LOG_LEVEL")
-
-	if !ok {
-		lvl = "debug"
-	}
-
-	ll, err := logger.ParseLevel(lvl)
-	if err != nil {
-		ll = logger.DebugLevel
-	}
-
-	logger.SetLevel(ll)
-}
 
 type DBStruct struct {
 	db *sql.DB

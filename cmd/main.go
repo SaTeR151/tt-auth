@@ -3,36 +3,20 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 	"github.com/sater-151/tt-auth/internal/config"
 	"github.com/sater-151/tt-auth/internal/database"
 	"github.com/sater-151/tt-auth/internal/handlers"
+	logg "github.com/sater-151/tt-auth/internal/logger"
 	"github.com/sater-151/tt-auth/internal/service"
 	logger "github.com/sirupsen/logrus"
 )
 
-// для настройки logrus
-func init() {
-	logger.SetFormatter(&logger.TextFormatter{FullTimestamp: true})
-	lvl, ok := os.LookupEnv("LOG_LEVEL")
-
-	if !ok {
-		lvl = "debug"
-	}
-
-	ll, err := logger.ParseLevel(lvl)
-	if err != nil {
-		ll = logger.DebugLevel
-	}
-
-	logger.SetLevel(ll)
-}
-
 func main() {
-	logger.Info(".env download")
+	logg.Init()
+
 	err := godotenv.Load()
 	if err != nil {
 		logger.Error(err)

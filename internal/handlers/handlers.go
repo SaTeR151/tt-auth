@@ -14,23 +14,6 @@ import (
 	logger "github.com/sirupsen/logrus"
 )
 
-// для настройки logrus
-func init() {
-	logger.SetFormatter(&logger.TextFormatter{FullTimestamp: true})
-	lvl, ok := os.LookupEnv("LOG_LEVEL")
-
-	if !ok {
-		lvl = "debug"
-	}
-
-	ll, err := logger.ParseLevel(lvl)
-	if err != nil {
-		ll = logger.DebugLevel
-	}
-
-	logger.SetLevel(ll)
-}
-
 func GetTokens(DB *database.DBStruct) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		logger.Info("start getting tokens")
@@ -47,7 +30,6 @@ func GetTokens(DB *database.DBStruct) http.HandlerFunc {
 			http.Error(res, "", http.StatusInternalServerError)
 			return
 		}
-
 		// access token generation
 		atExp := time.Now().Add(30 * time.Minute)
 		claims := &jwt.MapClaims{
@@ -143,6 +125,12 @@ func RefreshTokens(s *service.ServiceStruct) http.HandlerFunc {
 			http.Error(res, "", http.StatusInternalServerError)
 			return
 		}
+
+		//
+		//
+		//	Проверка хоста и отправка на mail
+		//
+		//
 
 		// access token generation
 		atExp := time.Now().Add(30 * time.Minute)
