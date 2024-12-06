@@ -67,14 +67,14 @@ func (s *ServiceStruct) GenerateTokens(host string) (string, string, error) {
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	atSign, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	aToken, err = accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		return aToken, rToken, err
 	}
 
 	// refresh token generation
 	rtSH := sha256.Sum256([]byte(tokenLink))
-	rToken = fmt.Sprintf("%x%v", rtSH, atSign[len(atSign)-6:])
+	rToken = fmt.Sprintf("%x%v", rtSH, aToken[len(aToken)-6:])
 
 	return aToken, rToken, nil
 }

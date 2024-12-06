@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/base64"
 	"net/http"
 	"time"
@@ -20,17 +21,16 @@ func GetTokens(s *service.ServiceStruct) http.HandlerFunc {
 			return
 		}
 
-		rToken, aToken, err := s.GenerateTokens(req.Header.Get("Host"))
+		aToken, rToken, err := s.GenerateTokens(req.Host)
 		if err != nil {
 			logger.Error(err)
 			http.Error(res, "", http.StatusInternalServerError)
 			return
 		}
-
 		// save refresh token
 		err = s.DB.InsertRT(guid, rToken)
 		if err != nil {
-			if err == database.ErrUserNotFound {
+			if err == sql.ErrNoRows {
 				logger.Error(err)
 				http.Error(res, "", http.StatusUnauthorized)
 				return
@@ -43,7 +43,7 @@ func GetTokens(s *service.ServiceStruct) http.HandlerFunc {
 
 		rtB64 := base64.StdEncoding.EncodeToString([]byte(rToken))
 
-		atExp := time.Now().Add(30 * time.Minute)
+		atExp := time.Now().Add(30 * time.Second)
 		rtExp := time.Now().Add(720 * time.Hour)
 		http.SetCookie(res, &http.Cookie{
 			Name:     "at",
@@ -104,7 +104,7 @@ func RefreshTokens(s *service.ServiceStruct) http.HandlerFunc {
 		//
 
 		// access token generation
-		rToken, aToken, err := s.GenerateTokens(req.Header.Get("Host"))
+		aToken, rToken, err := s.GenerateTokens(req.Header.Get("Host"))
 		if err != nil {
 			logger.Error(err)
 			http.Error(res, "", http.StatusInternalServerError)
