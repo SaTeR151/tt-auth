@@ -48,7 +48,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Get("/auth", handlers.GetTokens(db))
+	r.Get("/auth", handlers.GetTokens(service))
 	r.Get("/refresh", handlers.RefreshTokens(service))
 
 	logger.Info(fmt.Sprintf("server start at port: %s\n", serverConfig.Port))

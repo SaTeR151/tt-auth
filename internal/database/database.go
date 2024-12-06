@@ -65,7 +65,7 @@ func (db *DBStruct) Migration() error {
 func (db DBStruct) InsertRT(guid, rt string) error {
 	logger.Debug("set refresh token")
 	var ab string
-	err := db.db.QueryRow("update users_auth set rt=crypt($1, 'nothing') where id=$2 returning rt", rt, guid).Scan(&ab)
+	err := db.db.QueryRow("update users_auth set rt=crypt($1, 'nothing') where user_id=$2 returning rt", rt, guid).Scan(&ab)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (db DBStruct) SelectMail(guid string) (string, error) {
 func (db DBStruct) CompareRT(rtGet, guid string) (bool, error) {
 	logger.Debug("start check rt")
 	var rtDB sql.NullString
-	err := db.db.QueryRow("SELECT rt FROM users_auth WHERE id=$1", guid).Scan(&rtDB)
+	err := db.db.QueryRow("SELECT rt FROM users_auth WHERE user_id=$1", guid).Scan(&rtDB)
 	if err != nil {
 		return false, err
 	}

@@ -1,20 +1,16 @@
 package handlers
 
 import (
-	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/sater-151/tt-auth/internal/database"
 	"github.com/sater-151/tt-auth/internal/service"
 	logger "github.com/sirupsen/logrus"
 )
 
-func GetTokens(DB *database.DBStruct) http.HandlerFunc {
+func GetTokens(s *service.ServiceStruct) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		logger.Info("getting tokens")
 		guid := req.FormValue("guid")
@@ -24,35 +20,15 @@ func GetTokens(DB *database.DBStruct) http.HandlerFunc {
 			return
 		}
 
-		tokenLink, err := service.CreateLink()
+		rToken, aToken, err := s.GenerateTokens(req.Header.Get("Host"))
 		if err != nil {
 			logger.Error(err)
 			http.Error(res, "", http.StatusInternalServerError)
 			return
 		}
-		// access token generation
-		atExp := time.Now().Add(30 * time.Minute)
-		claims := &jwt.MapClaims{
-			"Host":       req.Header.Get("Host"),
-			"Expiration": atExp.Unix(),
-			"LinkString": tokenLink,
-		}
-
-		accessToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-		atSign, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
-		if err != nil {
-			logger.Error(err)
-			http.Error(res, "", http.StatusInternalServerError)
-			return
-		}
-
-		// refresh token generation
-		rtExp := time.Now().Add(720 * time.Hour)
-		rtSH := sha256.Sum256([]byte(tokenLink))
-		rt := fmt.Sprintf("%x%v", rtSH, atSign[len(atSign)-6:])
 
 		// save refresh token
-		err = DB.InsertRT(guid, rt)
+		err = s.DB.InsertRT(guid, rToken)
 		if err != nil {
 			if err == database.ErrUserNotFound {
 				logger.Error(err)
@@ -65,17 +41,19 @@ func GetTokens(DB *database.DBStruct) http.HandlerFunc {
 			}
 		}
 
-		rtB64 := base64.StdEncoding.EncodeToString([]byte(rt))
+		rtB64 := base64.StdEncoding.EncodeToString([]byte(rToken))
 
+		atExp := time.Now().Add(30 * time.Minute)
+		rtExp := time.Now().Add(720 * time.Hour)
 		http.SetCookie(res, &http.Cookie{
 			Name:     "at",
-			Value:    atSign,
+			Value:    aToken,
 			Expires:  atExp,
 			HttpOnly: true,
 		})
 		http.SetCookie(res, &http.Cookie{
 			Name:     "rt",
-			Value:    string(rtB64),
+			Value:    rtB64,
 			Expires:  rtExp,
 			HttpOnly: true,
 		})
@@ -119,13 +97,6 @@ func RefreshTokens(s *service.ServiceStruct) http.HandlerFunc {
 			return
 		}
 
-		tokenLink, err := service.CreateLink()
-		if err != nil {
-			logger.Error(err)
-			http.Error(res, "", http.StatusInternalServerError)
-			return
-		}
-
 		//
 		//
 		//	Проверка хоста и отправка на mail
@@ -133,28 +104,15 @@ func RefreshTokens(s *service.ServiceStruct) http.HandlerFunc {
 		//
 
 		// access token generation
-		atExp := time.Now().Add(30 * time.Minute)
-		claims := &jwt.MapClaims{
-			"Host":       req.Header.Get("Host"),
-			"Expiration": atExp.Unix(),
-			"LinkString": tokenLink,
-		}
-
-		accessToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-		atSign, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+		rToken, aToken, err := s.GenerateTokens(req.Header.Get("Host"))
 		if err != nil {
 			logger.Error(err)
 			http.Error(res, "", http.StatusInternalServerError)
 			return
 		}
 
-		// refresh token generation
-		rtExp := time.Now().Add(720 * time.Hour)
-		rtSH := sha256.Sum256([]byte(tokenLink))
-		rt := fmt.Sprintf("%x%v", rtSH, atSign[len(atSign)-6:])
-
 		// save refresh token
-		err = s.DB.InsertRT(guid, rt)
+		err = s.DB.InsertRT(guid, rToken)
 		if err != nil {
 			if err == database.ErrUserNotFound {
 				logger.Error(err)
@@ -167,17 +125,19 @@ func RefreshTokens(s *service.ServiceStruct) http.HandlerFunc {
 			}
 		}
 
-		rtB64 := base64.StdEncoding.EncodeToString([]byte(rt))
+		rtB64 := base64.StdEncoding.EncodeToString([]byte(rToken))
 
+		atExp := time.Now().Add(30 * time.Minute)
+		rtExp := time.Now().Add(720 * time.Hour)
 		http.SetCookie(res, &http.Cookie{
 			Name:     "at",
-			Value:    atSign,
+			Value:    aToken,
 			Expires:  atExp,
 			HttpOnly: true,
 		})
 		http.SetCookie(res, &http.Cookie{
 			Name:     "rt",
-			Value:    string(rtB64),
+			Value:    rtB64,
 			Expires:  rtExp,
 			HttpOnly: true,
 		})
