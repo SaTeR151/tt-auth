@@ -123,7 +123,7 @@ func RefreshTokens(s *service.ServiceStruct) http.HandlerFunc {
 		// save refresh token
 		err = s.DB.InsertRT(guid, rToken)
 		if err != nil {
-			if err == database.ErrUserNotFound {
+			if err == sql.ErrNoRows {
 				logger.Error(err)
 				http.Error(res, "", http.StatusUnauthorized)
 				return
