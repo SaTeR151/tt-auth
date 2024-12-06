@@ -78,3 +78,20 @@ func (s *ServiceStruct) GenerateTokens(host string) (string, string, error) {
 
 	return aToken, rToken, nil
 }
+
+func (s *ServiceStruct) CheckHost(aToken, host string) (bool, error) {
+	jwtToken, err := jwt.Parse(aToken, func(t *jwt.Token) (interface{}, error) {
+		return os.Getenv("JWT_SECRET"), nil
+	})
+	if err != nil {
+		return false, err
+	}
+	claims, ok := jwtToken.Claims.(jwt.MapClaims)
+	if !ok {
+		return false, fmt.Errorf("failed to typecast jwt claims")
+	}
+	if claims["Host"].(string) == host {
+		return true, nil
+	}
+	return false, nil
+}

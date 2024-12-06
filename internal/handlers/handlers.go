@@ -97,13 +97,22 @@ func RefreshTokens(s *service.ServiceStruct) http.HandlerFunc {
 			return
 		}
 
-		//
-		//
-		//	Проверка хоста и отправка на mail
-		//
-		//
+		atCook, err := req.Cookie("at")
+		if err != nil {
+			logger.Error(err)
+			http.Error(res, "", http.StatusInternalServerError)
+			return
+		}
+		ok, err := s.CheckHost(atCook.Value, req.Host)
+		if err != nil {
+			logger.Error(err)
+			http.Error(res, "", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			s.EmailWarning(guid)
+		}
 
-		// access token generation
 		aToken, rToken, err := s.GenerateTokens(req.Header.Get("Host"))
 		if err != nil {
 			logger.Error(err)

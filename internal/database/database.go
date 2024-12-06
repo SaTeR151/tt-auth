@@ -64,8 +64,7 @@ func (db *DBStruct) Migration() error {
 
 func (db DBStruct) InsertRT(guid, rt string) error {
 	logger.Debug("set refresh token")
-	var ab string
-	err := db.db.QueryRow("update users_auth set rt=crypt($1, 'nothing') where user_id=$2 returning rt", rt, guid).Scan(&ab)
+	_, err := db.db.Exec("update users_auth set rt=crypt($1, 'nothing') where user_id=$2 returning rt", rt, guid)
 	if err != nil {
 		return err
 	}
