@@ -22,18 +22,17 @@ func main() {
 		logger.Error(err)
 		return
 	}
-
 	logger.Info("configuration getting")
 	serverConfig := config.GetServerConfig()
 	dbConfig := config.GetDBConfig()
 
 	logger.Info("database connecting")
-	db, err := database.Open(dbConfig)
+	db, close, err := database.Open(dbConfig)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Database connect error: %s\n", err.Error()))
 		return
 	}
-	defer db.Close()
+	defer close()
 	logger.Info("database has been connected")
 
 	logger.Info("starting migration")

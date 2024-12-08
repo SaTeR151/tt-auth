@@ -5,14 +5,21 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sater-151/tt-auth/internal/database"
 )
 
+type ServiceInterface interface {
+	EmailWarning(guid string) error
+	InsertRT(guid, rToken string) error
+	CompareRT(rtb, guid string) (bool, error)
+}
+
 type ServiceStruct struct {
-	DB *database.DBStruct
+	DB database.DBInterface
 }
 
 func New(db *database.DBStruct) *ServiceStruct {
@@ -50,7 +57,7 @@ func SendMasseg(mail string) error {
 	return nil
 }
 
-func (s *ServiceStruct) GenerateTokens(host string) (string, string, error) {
+func GenerateTokens(host string) (string, string, error) {
 	var aToken, rToken string
 
 	tokenLink, err := CreateLink()
@@ -59,13 +66,16 @@ func (s *ServiceStruct) GenerateTokens(host string) (string, string, error) {
 	}
 
 	// access token generation
-	atExp := time.Now().Add(30 * time.Minute)
+	atTimeExp, err := strconv.Atoi(os.Getenv("ATEXPIRES"))
+	if err != nil {
+		return aToken, rToken, err
+	}
+	atExp := time.Now().Add(time.Duration(atTimeExp) * time.Second)
 	claims := &jwt.MapClaims{
 		"ExpiresAt":  atExp.Unix(),
 		"Host":       host,
 		"LinkString": tokenLink,
 	}
-
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	aToken, err = accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
@@ -75,13 +85,12 @@ func (s *ServiceStruct) GenerateTokens(host string) (string, string, error) {
 	// refresh token generation
 	rtSH := sha256.Sum256([]byte(tokenLink))
 	rToken = fmt.Sprintf("%x%v", rtSH, aToken[len(aToken)-6:])
-
 	return aToken, rToken, nil
 }
 
-func (s *ServiceStruct) CheckHost(aToken, host string) (bool, error) {
+func CheckHost(aToken, host string) (bool, error) {
 	jwtToken, err := jwt.Parse(aToken, func(t *jwt.Token) (interface{}, error) {
-		return os.Getenv("JWT_SECRET"), nil
+		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 	if err != nil {
 		return false, err
@@ -94,4 +103,14 @@ func (s *ServiceStruct) CheckHost(aToken, host string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func (s *ServiceStruct) InsertRT(guid, rToken string) error {
+	err := s.DB.InsertRT(guid, rToken)
+	return err
+}
+
+func (s *ServiceStruct) CompareRT(rtb, guid string) (bool, error) {
+	comp, err := s.DB.CompareRT(rtb, guid)
+	return comp, err
 }

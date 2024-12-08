@@ -17,15 +17,18 @@ import (
 var ErrUserNotFound = errors.New("user not found")
 var ErrUnauthorized = errors.New("unauthorized user")
 
+type DBInterface interface {
+	Migration() error
+	InsertRT(guid, rt string) error
+	SelectMail(guid string) (string, error)
+	CompareRT(rtGet, guid string) (bool, error)
+}
+
 type DBStruct struct {
 	db *sql.DB
 }
 
-func (db *DBStruct) Close() {
-	db.db.Close()
-}
-
-func Open(config models.DBConfig) (*DBStruct, error) {
+func Open(config models.DBConfig) (*DBStruct, func() error, error) {
 	var err error
 	connInfo := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		config.Host,
@@ -36,14 +39,15 @@ func Open(config models.DBConfig) (*DBStruct, error) {
 		config.Sslmode)
 	db, err := sql.Open("pgx", connInfo)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	err = db.Ping()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	DB := &DBStruct{db: db}
-	return DB, nil
+
+	return DB, db.Close, nil
 }
 
 func (db *DBStruct) Migration() error {
@@ -62,21 +66,28 @@ func (db *DBStruct) Migration() error {
 	return nil
 }
 
-func (db DBStruct) InsertRT(guid, rt string) error {
+func (db *DBStruct) InsertRT(guid, rt string) error {
 	logger.Debug("set refresh token")
-	_, err := db.db.Exec("update users_auth set rt=crypt($1, 'nothing') where user_id=$2 returning rt", rt, guid)
+	res, err := db.db.Exec("update users_auth set rt=crypt($1, 'nothing') where user_id=$2 returning rt", rt, guid)
 	if err != nil {
 		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
 	}
 	logger.Debug("refresh token has beeb set")
 	return nil
 }
 
-func (db DBStruct) SelectMail(guid string) (string, error) {
+func (db *DBStruct) SelectMail(guid string) (string, error) {
 	return "example@mail.ru", nil
 }
 
-func (db DBStruct) CompareRT(rtGet, guid string) (bool, error) {
+func (db *DBStruct) CompareRT(rtGet, guid string) (bool, error) {
 	logger.Debug("start check rt")
 	var rtDB sql.NullString
 	err := db.db.QueryRow("SELECT rt FROM users_auth WHERE user_id=$1", guid).Scan(&rtDB)
