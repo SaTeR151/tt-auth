@@ -16,27 +16,27 @@ func GetServerConfig() models.ServerConfig {
 func GetDBConfig() models.DBConfig {
 	var dbConfig models.DBConfig
 	dbConfig.User = os.Getenv("POSTGRES_USER")
-	if dbConfig.User != "" {
+	if dbConfig.User == "" {
 		logger.Warn("postgres user is empty")
 	}
 	dbConfig.Pass = os.Getenv("POSTGRES_PASSWORD")
-	if dbConfig.Pass != "" {
+	if dbConfig.Pass == "" {
 		logger.Warn("postgres password if empty")
 	}
 	dbConfig.Dbname = os.Getenv("POSTGRES_DB")
-	if dbConfig.Dbname != "" {
+	if dbConfig.Dbname == "" {
 		logger.Warn("postgres database name if empty")
 	}
 	dbConfig.Sslmode = os.Getenv("SSLMODE")
-	if dbConfig.Sslmode != "" {
+	if dbConfig.Sslmode == "" {
 		logger.Warn("postgres sslmode is empty")
 	}
 	dbConfig.Port = os.Getenv("DB_PORT")
-	if dbConfig.Port != "" {
+	if dbConfig.Port == "" {
 		logger.Warn("postgres port is empty")
 	}
 	dbConfig.Host = os.Getenv("DB_HOST")
-	if dbConfig.Host != "" {
+	if dbConfig.Host == "" {
 		logger.Warn("postgres host is empty")
 	}
 	return dbConfig

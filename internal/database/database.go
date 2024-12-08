@@ -69,7 +69,7 @@ func (db *DBStruct) Migration() error {
 
 func (db *DBStruct) UpdateRT(guid, rt string) error {
 	logger.Debug("set refresh token")
-	res, err := db.db.Exec("UPDATE users_auth SET rt=crypt($1, 'nothing') WHERE user_id=$2 RETURTING rt", rt, guid)
+	res, err := db.db.Exec("UPDATE users_auth SET rt=crypt($1, 'nothing') WHERE user_id=$2 RETURNING rt", rt, guid)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (db *DBStruct) SelectMail(guid string) (string, error) {
 
 func (db *DBStruct) GetBcrypt(rToken string) (string, error) {
 	var rTokenBcrypt sql.NullString
-	err := db.db.QueryRow("SELECT ($1, 'nothing')", rToken).Scan(&rTokenBcrypt)
+	err := db.db.QueryRow("SELECT crypt($1, 'nothing')", rToken).Scan(&rTokenBcrypt)
 	if err != nil {
 		return "", err
 	}
