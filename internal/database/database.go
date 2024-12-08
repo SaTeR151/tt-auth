@@ -19,9 +19,10 @@ var ErrUnauthorized = errors.New("unauthorized user")
 
 type DBInterface interface {
 	Migration() error
-	InsertRT(guid, rt string) error
+	UpdateRT(guid, rt string) error
 	SelectMail(guid string) (string, error)
-	CompareRT(rtGet, guid string) (bool, error)
+	GetBcrypt(rToken string) (string, error)
+	GetToken(guid string) (string, error)
 }
 
 type DBStruct struct {
@@ -66,7 +67,7 @@ func (db *DBStruct) Migration() error {
 	return nil
 }
 
-func (db *DBStruct) InsertRT(guid, rt string) error {
+func (db *DBStruct) UpdateRT(guid, rt string) error {
 	logger.Debug("set refresh token")
 	res, err := db.db.Exec("UPDATE users_auth SET rt=crypt($1, 'nothing') WHERE user_id=$2 RETURTING rt", rt, guid)
 	if err != nil {
@@ -87,24 +88,23 @@ func (db *DBStruct) SelectMail(guid string) (string, error) {
 	return "example@mail.ru", nil
 }
 
-func (db *DBStruct) CompareRT(rtGet, guid string) (bool, error) {
-	logger.Debug("start check rt")
+func (db *DBStruct) GetBcrypt(rToken string) (string, error) {
+	var rTokenBcrypt sql.NullString
+	err := db.db.QueryRow("SELECT ($1, 'nothing')", rToken).Scan(&rTokenBcrypt)
+	if err != nil {
+		return "", err
+	}
+	return rTokenBcrypt.String, nil
+}
+
+func (db *DBStruct) GetToken(guid string) (string, error) {
 	var rtDB sql.NullString
 	err := db.db.QueryRow("SELECT rt FROM users_auth WHERE user_id=$1", guid).Scan(&rtDB)
 	if err != nil {
-		return false, err
+		return "", err
 	}
 	if !rtDB.Valid {
-		return false, nil
+		return "", ErrUserNotFound
 	}
-	var comp sql.NullString
-	err = db.db.QueryRow("SELECT crypt($1, $2)", rtGet, rtDB.String).Scan(&comp)
-	if err != nil {
-		return false, err
-	}
-	if comp.String == rtDB.String {
-		logger.Debug("check rt has been end")
-		return true, nil
-	}
-	return false, nil
+	return rtDB.String, nil
 }

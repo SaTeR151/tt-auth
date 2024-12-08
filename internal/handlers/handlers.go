@@ -12,6 +12,7 @@ import (
 
 	"github.com/sater-151/tt-auth/internal/database"
 	"github.com/sater-151/tt-auth/internal/service"
+	"github.com/sater-151/tt-auth/internal/utils"
 	logger "github.com/sirupsen/logrus"
 )
 
@@ -27,7 +28,7 @@ func GetTokens(s service.ServiceInterface) http.HandlerFunc {
 			return
 		}
 
-		aToken, rToken, err := service.GenerateTokens(req.Host)
+		aToken, rToken, err := utils.GenerateTokens(req.Host)
 		if err != nil {
 			logger.Error(err)
 			http.Error(res, "", http.StatusInternalServerError)
@@ -94,7 +95,15 @@ func RefreshTokens(s service.ServiceInterface) http.HandlerFunc {
 			http.Error(res, "", http.StatusUnauthorized)
 			return
 		}
-		rtb, err := base64.StdEncoding.DecodeString(rtCookie.Value)
+		gettingRTBase64, err := base64.StdEncoding.DecodeString(rtCookie.Value)
+		if err != nil {
+			logger.Error(err)
+			http.Error(res, "", http.StatusInternalServerError)
+			return
+		}
+
+		logger.Debug("starting generate tokens")
+		aToken, rToken, err := utils.GenerateTokens(req.Host)
 		if err != nil {
 			logger.Error(err)
 			http.Error(res, "", http.StatusInternalServerError)
@@ -102,7 +111,7 @@ func RefreshTokens(s service.ServiceInterface) http.HandlerFunc {
 		}
 
 		logger.Debug("comparing refresh tokens")
-		comp, err := s.CompareRT(string(rtb), guid)
+		comp, err := s.CompareRT(string(gettingRTBase64), guid)
 		if err != nil {
 			fmt.Println(3)
 			logger.Error(err)
@@ -122,7 +131,7 @@ func RefreshTokens(s service.ServiceInterface) http.HandlerFunc {
 		}
 
 		logger.Debug("checking host")
-		ok, err := service.CheckHost(atCook.Value, req.Host)
+		ok, err := utils.CheckHost(atCook.Value, req.Host)
 		if err != nil {
 			logger.Error(err)
 			http.Error(res, "", http.StatusInternalServerError)
@@ -131,14 +140,6 @@ func RefreshTokens(s service.ServiceInterface) http.HandlerFunc {
 		if !ok {
 			logger.Warn("another ip")
 			s.EmailWarning(guid)
-		}
-
-		logger.Debug("starting generate tokens")
-		aToken, rToken, err := service.GenerateTokens(req.Host)
-		if err != nil {
-			logger.Error(err)
-			http.Error(res, "", http.StatusInternalServerError)
-			return
 		}
 
 		// save refresh token

@@ -22,14 +22,14 @@ func main() {
 		logger.Error(err)
 		return
 	}
-	logger.Info("configuration getting")
+	logger.Info("getting configuration")
 	serverConfig := config.GetServerConfig()
 	dbConfig := config.GetDBConfig()
 
 	logger.Info("database connecting")
 	db, close, err := database.Open(dbConfig)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Database connect error: %s\n", err.Error()))
+		logger.Error(err)
 		return
 	}
 	defer close()
@@ -52,7 +52,7 @@ func main() {
 
 	logger.Info(fmt.Sprintf("server start at port: %s\n", serverConfig.Port))
 	if err := http.ListenAndServe(":"+serverConfig.Port, r); err != nil {
-		logger.Error(fmt.Sprintf("Server startup error: %s\n", err.Error()))
+		logger.Error(fmt.Sprintf("Server error: %s\n", err.Error()))
 		return
 	}
 }
