@@ -154,11 +154,13 @@ func TestRefreshTokens(t *testing.T) {
 
 	serviceMock.On("InsertRT", "true", mock.Anything).Return(nil)
 	serviceMock.On("InsertRT", "false", mock.Anything).Return(sql.ErrNoRows)
+
 	for _, test := range tests {
 		fmt.Printf("Тест id: %v\n", test.id)
 		url := fmt.Sprintf("/refresh?guid=%s", test.guid)
 		req := httptest.NewRequest("GET", url, nil)
 		resReqorder := httptest.NewRecorder()
+
 		if test.aToken != "" {
 			atExp := time.Now().Add(30 * time.Second)
 			req.AddCookie(&http.Cookie{
@@ -177,6 +179,7 @@ func TestRefreshTokens(t *testing.T) {
 				HttpOnly: true,
 			})
 		}
+
 		handler := http.HandlerFunc(RefreshTokens(serviceMock))
 		handler.ServeHTTP(resReqorder, req)
 

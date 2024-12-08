@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,13 +15,15 @@ import (
 	logger "github.com/sirupsen/logrus"
 )
 
+var ErrGUIDRequired = errors.New("guid required")
+
 func GetTokens(s service.ServiceInterface) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		logger.Info("getting tokens")
 		guid := req.FormValue("guid")
 		if guid == "" {
-			logger.Error("guid required")
-			http.Error(res, "guid required", http.StatusBadRequest)
+			logger.Error(ErrGUIDRequired)
+			http.Error(res, ErrGUIDRequired.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -80,8 +83,8 @@ func RefreshTokens(s service.ServiceInterface) http.HandlerFunc {
 		logger.Info("refreshing tokens")
 		guid := req.FormValue("guid")
 		if guid == "" {
-			logger.Error("guid required")
-			http.Error(res, "guid required", http.StatusBadRequest)
+			logger.Error(ErrGUIDRequired)
+			http.Error(res, ErrGUIDRequired.Error(), http.StatusBadRequest)
 			return
 		}
 

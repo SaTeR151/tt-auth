@@ -3,6 +3,7 @@ package service
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,6 +12,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sater-151/tt-auth/internal/database"
 )
+
+var ErrTypecastJWT = errors.New("failed to typecast jwt claims")
 
 type ServiceInterface interface {
 	EmailWarning(guid string) error
@@ -97,7 +100,7 @@ func CheckHost(aToken, host string) (bool, error) {
 	}
 	claims, ok := jwtToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return false, fmt.Errorf("failed to typecast jwt claims")
+		return false, ErrTypecastJWT
 	}
 	if claims["Host"].(string) == host {
 		return true, nil

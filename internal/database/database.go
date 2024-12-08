@@ -68,7 +68,7 @@ func (db *DBStruct) Migration() error {
 
 func (db *DBStruct) InsertRT(guid, rt string) error {
 	logger.Debug("set refresh token")
-	res, err := db.db.Exec("update users_auth set rt=crypt($1, 'nothing') where user_id=$2 returning rt", rt, guid)
+	res, err := db.db.Exec("UPDATE users_auth SET rt=crypt($1, 'nothing') WHERE user_id=$2 RETURTING rt", rt, guid)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (db *DBStruct) CompareRT(rtGet, guid string) (bool, error) {
 		return false, nil
 	}
 	var comp sql.NullString
-	err = db.db.QueryRow("select crypt($1, $2)", rtGet, rtDB.String).Scan(&comp)
+	err = db.db.QueryRow("SELECT crypt($1, $2)", rtGet, rtDB.String).Scan(&comp)
 	if err != nil {
 		return false, err
 	}
